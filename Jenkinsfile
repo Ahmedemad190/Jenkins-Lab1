@@ -5,7 +5,7 @@ pipeline {
         dockerHubCredentialsID = 'task-ivolve'                          // DockerHub credentials ID.
         imageName              = '3omda1/firstimage'             // DockerHub repo/image name.
         k8sCredentialsID       = 'kube-cred'                      // Kubernetes credentials ID (ServiceAccount or kubeconfig).
-        k8sClusterURL          = 'https://api.k8s-cluster.com'         // Kubernetes Cluster URL.
+        k8sClusterURL          = 'https://192.168.49.2:8443'         // Kubernetes Cluster URL.
         k8sNamespace           = 'default'                          // Kubernetes namespace.
     }
 
