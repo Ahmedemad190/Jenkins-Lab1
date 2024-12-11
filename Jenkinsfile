@@ -6,9 +6,8 @@ pipeline {
         DOCKER_HUB_CREDENTIALS = 'task-ivolve'
         DOCKER_IMAGE_NAME = '3omda1/firstimage'
         GITHUB_REPO_URL = 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
-        KIND_CLUSTER_NAME = 'minikube'
+        MINIKUBE_CLUSTER_NAME = 'minikube'
     }
-
 
     stages {
         stage('Checkout Code') {
@@ -17,8 +16,6 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
             }
         }
-
-       
 
         stage('Build Docker Image') {
             steps {
@@ -41,21 +38,22 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to Kind Cluster') {
+
+        stage('Deploy to Minikube') {
             steps {
                 script {
-                    // Ensure Kind cluster exists and set context
+                    // Ensure Minikube cluster is running
                     sh '''
-                        # Create Kind cluster if not exists
-                        if ! kind get clusters | grep -q ${KIND_CLUSTER_NAME}; then
-                            kind create cluster --name ${KIND_CLUSTER_NAME}
+                        # Start Minikube if it's not running
+                        if ! minikube status | grep -q "Running"; then
+                            minikube start --driver=docker
                         fi
 
-                        # Set kubectl context
-                        kubectl config use-context kind-${KIND_CLUSTER_NAME}
+                        # Set the kubectl context to Minikube
+                        kubectl config use-context minikube
 
-                        # Load image to Kind cluster
-                        kind load docker-image ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name ${KIND_CLUSTER_NAME}
+                        # Load image to Minikube's Docker daemon
+                        minikube image load ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
 
                         # Create deployment file
                         cat > deployment.yaml << EOF
