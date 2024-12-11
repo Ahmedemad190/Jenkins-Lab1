@@ -7,7 +7,6 @@ pipeline {
         GITHUB_REPO_URL = 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
         OPENSHIFT_PROJECT = 'ahmedemad'  // اسم الـ project في OpenShift
         OPENSHIFT_SERVER = 'https://api.ocp-training.ivolve-test.com:6443'  // رابط الـ OpenShift Cluster
-        openshiftCredentialsID = 'openshift-sa-token'
     }
 
     stages {
@@ -41,25 +40,25 @@ pipeline {
             steps {
                 script {
                     // Use withCredentials to securely provide the kubeconfig file
-                    withCredentials([file(credentialsId: 'openshift-sa-token', variable: 'TOKEN')]) {
+                    withCredentials([file(credentialsId: 'openshift-sa-token', variable: 'KUBECONFIG_FILE')]) {
                         // Ensure OpenShift cluster is connected
                         sh '''
                             # Set the kubectl context to OpenShift using the kubeconfig file
                             export KUBECONFIG=$KUBECONFIG_FILE
-                            sudo oc login --token=${OPENSHIFT_TOKEN} --server=${OPENSHIFT_SERVER}
-                            sudo oc project ${OPENSHIFT_PROJECT}
+                            oc login --token=${OPENSHIFT_TOKEN} --server=${OPENSHIFT_SERVER}
+                            oc project ${OPENSHIFT_PROJECT}
 
                             # Deploy the image on OpenShift
-                            sudo oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app
+                            oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app
 
                             # Expose the app as a service
-                            sudo oc expose svc/lab-app --port=80 --name=lab-app-service
+                            oc expose svc/lab-app --port=80 --name=lab-app-service
 
                             # Verify the deployment
-                            sudo oc rollout status deployment/lab-app
-                            sudo oc get deployments
-                            sudo oc get services
-                            sudo oc get pods
+                            oc rollout status deployment/lab-app
+                            oc get deployments
+                            oc get services
+                            oc get pods
                         '''
                     }
                 }
