@@ -48,10 +48,10 @@ pipeline {
                             oc project ahmedemad
 
                             # Deploy the image on OpenShift
-                            oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app
+                            oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app-1
 
                             # Expose the app as a service
-                            oc expose svc/lab-app-1 --port=90 --name=lab-app-service
+                            oc expose svc/lab-app-1 --port=90 --name=lab-app-1-service
 
                             # Verify the deployment
                             oc rollout status deployment/lab-app-1
