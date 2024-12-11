@@ -14,7 +14,7 @@ pipeline {
             steps {
                 script {
                     // Checkout the Git repository
-                    git branch: 'main', url: 'https://github.com/mujemi26/jenkins.git'
+                    git branch: 'main', url: 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
                 }
             }
         }
