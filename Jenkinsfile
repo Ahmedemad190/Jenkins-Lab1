@@ -1,49 +1,73 @@
 pipeline {
     agent any
-    
+
     environment {
-        dockerHubCredentialsID = 'task-ivolve'                          // DockerHub credentials ID.
-        imageName              = '3omda1/firstimage'         // DockerHub repo/image name.
-        openshiftCredentialsID = 'openshift-sa-token'                    // service account token credentials ID
-        openshiftClusterURL    = 'https://api.ocp-training.ivolve-test.com:6443' // OpenShift Cluster URL.
-        openshiftProject       = 'ahmedemad'                         // OpenShift project name.
+        DOCKER_HUB_CREDENTIALS = 'task-ivolve'
+        DOCKER_IMAGE_NAME = '3omda1/firstimage'
+        GITHUB_REPO_URL = 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
+        OPENSHIFT_PROJECT = 'ahmedemad'  // اسم الـ project في OpenShift
+        OPENSHIFT_SERVER = 'https://api.ocp-training.ivolve-test.com:6443'  // رابط الـ OpenShift Cluster
+        openshiftCredentialsID = 'openshift-sa-token'
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Checkout Code') {
             steps {
-                script {
-                    // Navigate to the directory that contains Dockerfile
-                    buildDockerImage("${imageName}")
-                }
+                git branch: 'main', url: 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
             }
         }
-        stage('Push Docker Image') {
+
+        stage('Build Docker Image') {
             steps {
-                script {
-                    // Navigate to the directory that contains Dockerfile
-                    pushDockerImage("${dockerHubCredentialsID}", "${imageName}")
+                sh """
+                    docker build -t ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} .
+                """
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withDockerRegistry([credentialsId: 'task-ivolve', url: '']) {
+                    sh """
+                        docker push ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}
+                        docker tag ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_IMAGE_NAME}:latest
+                        docker push ${DOCKER_IMAGE_NAME}:latest
+                    """
                 }
             }
         }
 
-        stage('Deploy on OpenShift Cluster') {
-            steps {
-                script { 
-                    deployToOpenShift("${openshiftCredentialsID}", "${openshiftClusterURL}", "${openshiftProject}", "${imageName}")
-                }
-            }
-        }
-        stage('Update Deployment YAML') {
+        stage('Deploy to OpenShift') {
             steps {
                 script {
-                    updateDeployment("${imageName}", "${BUILD_NUMBER}")
+                    // Use withCredentials to securely provide the kubeconfig file
+                    withCredentials([file(credentialsId: 'openshift-sa-token', variable: 'KUBECONFIG_FILE')]) {
+                        // Ensure OpenShift cluster is connected
+                        sh '''
+                            # Set the kubectl context to OpenShift using the kubeconfig file
+                            export KUBECONFIG=$KUBECONFIG_FILE
+                            sudo oc login --token=${OPENSHIFT_TOKEN} --server=${OPENSHIFT_SERVER}
+                            sudo oc project ${OPENSHIFT_PROJECT}
+
+                            # Deploy the image on OpenShift
+                            sudo oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app
+
+                            # Expose the app as a service
+                            sudo oc expose svc/lab-app --port=80 --name=lab-app-service
+
+                            # Verify the deployment
+                            sudo oc rollout status deployment/lab-app
+                            sudo oc get deployments
+                            sudo oc get services
+                            sudo oc get pods
+                        '''
+                    }
                 }
             }
         }
     }
 
- post {
+    post {
         success {
             echo "Deployment completed successfully!"
         }
