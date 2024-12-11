@@ -1,5 +1,4 @@
 pipeline {
-    // Remove the Docker agent and use the default Jenkins agent
     agent any
 
     environment {
@@ -12,14 +11,12 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                // Checkout code from the repository 
                 git branch: 'main', url: 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                // Build Docker image using shell command
                 sh """
                     docker build -t ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} .
                 """
@@ -28,7 +25,6 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                // Login and push image
                 withDockerRegistry([credentialsId: 'task-ivolve', url: '']) {
                     sh """
                         docker push ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}
@@ -42,21 +38,20 @@ pipeline {
         stage('Deploy to Minikube') {
             steps {
                 script {
-                    // Ensure Minikube cluster is running
-                    sh '''
-                        # Start Minikube if it's not running
-                        if ! minikube status | grep -q "Running"; then
-                            minikube start --driver=docker
-                        fi
+                    // Use withCredentials to securely provide the kubeconfig file
+                    withCredentials([file(credentialsId: 'kube-cred', variable: 'KUBECONFIG_FILE')]) {
+                        // Ensure Minikube cluster is running
+                        sh '''
 
-                        # Set the kubectl context to Minikube
-                        kubectl config use-context minikube
+                            # Set the kubectl context to Minikube
+                            export KUBECONFIG=$KUBECONFIG_FILE
+                            kubectl config use-context minikube
 
-                        # Load image to Minikube's Docker daemon
-                        minikube image load ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
+                            # Load image to Minikube's Docker daemon
+                            minikube image load ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
 
-                        # Create deployment file
-                        cat > deployment.yaml << EOF
+                            # Create deployment file
+                            cat > deployment.yaml << EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -91,15 +86,16 @@ spec:
       nodePort: 30080
 EOF
 
-                        # Apply deployment
-                        kubectl apply -f deployment.yaml
-                        
-                        # Verify deployment
-                        kubectl rollout status deployment/lab-app-deployment
-                        kubectl get deployments
-                        kubectl get services
-                        kubectl get pods
-                    '''
+                            # Apply deployment to the cluster
+                            kubectl apply -f deployment.yaml
+                            
+                            # Verify the deployment
+                            kubectl rollout status deployment/lab-app-deployment
+                            kubectl get deployments
+                            kubectl get services
+                            kubectl get pods
+                        '''
+                    }
                 }
             }
         }
@@ -113,7 +109,6 @@ EOF
             echo "Deployment failed. Check logs."
         }
         always {
-            // Cleanup
             sh '''
                 docker logout
                 docker image prune -f
