@@ -51,10 +51,10 @@ pipeline {
                             oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app
 
                             # Expose the app as a service
-                            oc expose svc/lab-app --port=80 --name=lab-app-service
+                            oc expose svc/lab-app-1 --port=90 --name=lab-app-service
 
                             # Verify the deployment
-                            oc rollout status deployment/lab-app
+                            oc rollout status deployment/lab-app-1
                             oc get deployments
                             oc get services
                             oc get pods
