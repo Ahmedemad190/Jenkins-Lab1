@@ -1,108 +1,49 @@
 pipeline {
     agent any
-
+    
     environment {
-        DOCKER_HUB_CREDENTIALS = 'task-ivolve'
-        DOCKER_IMAGE_NAME = '3omda1/firstimage'
-        GITHUB_REPO_URL = 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
-        MINIKUBE_CLUSTER_NAME = 'minikube'
-        KUBECONFIG = '/home/ahmed/.kube/config'
+        dockerHubCredentialsID = 'task-ivolve'                          // DockerHub credentials ID.
+        imageName              = '3omda1/firstimage'         // DockerHub repo/image name.
+        openshiftCredentialsID = 'openshift-sa-token'                    // service account token credentials ID
+        openshiftClusterURL    = 'https://api.ocp-training.ivolve-test.com:6443' // OpenShift Cluster URL.
+        openshiftProject       = 'ahmedemad'                         // OpenShift project name.
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} .
-                """
+                script {
+                    // Navigate to the directory that contains Dockerfile
+                    buildDockerImage("${imageName}")
+                }
             }
         }
-
-        stage('Push to Docker Hub') {
+        stage('Push Docker Image') {
             steps {
-                withDockerRegistry([credentialsId: 'task-ivolve', url: '']) {
-                    sh """
-                        docker push ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}
-                        docker tag ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_IMAGE_NAME}:latest
-                        docker push ${DOCKER_IMAGE_NAME}:latest
-                    """
+                script {
+                    // Navigate to the directory that contains Dockerfile
+                    pushDockerImage("${dockerHubCredentialsID}", "${imageName}")
                 }
             }
         }
 
-        stage('Deploy to Minikube') {
+        stage('Deploy on OpenShift Cluster') {
+            steps {
+                script { 
+                    deployToOpenShift("${openshiftCredentialsID}", "${openshiftClusterURL}", "${openshiftProject}", "${imageName}")
+                }
+            }
+        }
+        stage('Update Deployment YAML') {
             steps {
                 script {
-                    // Use withCredentials to securely provide the kubeconfig file
-                    withCredentials([file(credentialsId: 'kube-cred', variable: 'KUBECONFIG_FILE')]) {
-                        // Ensure Minikube cluster is running
-                        sh '''
-
-                            # Set the kubectl context to Minikube
-                            export KUBECONFIG=$KUBECONFIG_FILE
-                            kubectl config use-context minikube
-
-                            # Load image to Minikube's Docker daemon
-                            minikube image load ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
-
-                            # Create deployment file
-                            cat > deployment.yaml << EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: lab-app-deployment
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: lab-app
-  template:
-    metadata:
-      labels:
-        app: lab-app
-    spec:
-      containers:
-      - name: lab-app
-        image: ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: lab-app-service
-spec:
-  type: NodePort
-  selector:
-    app: lab-app
-  ports:
-    - port: 80
-      targetPort: 80
-      nodePort: 30080
-EOF
-
-                            # Apply deployment to the cluster
-                            kubectl apply -f deployment.yaml
-                            
-                            # Verify the deployment
-                            kubectl rollout status deployment/lab-app-deployment
-                            kubectl get deployments
-                            kubectl get services
-                            kubectl get pods
-                        '''
-                    }
+                    updateDeployment("${imageName}", "${BUILD_NUMBER}")
                 }
             }
         }
     }
 
-    post {
+ post {
         success {
             echo "Deployment completed successfully!"
         }
