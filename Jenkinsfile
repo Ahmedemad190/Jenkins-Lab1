@@ -41,7 +41,7 @@ pipeline {
             steps {
                 script {
                     // Use withCredentials to securely provide the kubeconfig file
-                    withCredentials([file(credentialsId: 'openshift-sa-token', variable: 'KUBECONFIG_FILE')]) {
+                    withCredentials([file(credentialsId: 'openshift-sa-token', variable: 'TOKEN')]) {
                         // Ensure OpenShift cluster is connected
                         sh '''
                             # Set the kubectl context to OpenShift using the kubeconfig file
