@@ -1,27 +1,38 @@
 pipeline {
     agent any
-
+    
     environment {
-        DOCKER_HUB_REPO = "3omda1/first-image"
-        KUBERNETES_DEPLOYMENT_FILE = "deployment.yaml"
-        DOCKER_CREDENTIALS = "task-ivolve"
+        dockerHubCredentialsID = 'task-ivolve'                          // DockerHub credentials ID.
+        imageName              = '3omda1/firstimage'             // DockerHub repo/image name.
+        k8sCredentialsID       = 'kube-cred'                      // Kubernetes credentials ID (ServiceAccount or kubeconfig).
+        k8sClusterURL          = 'https://api.k8s-cluster.com'         // Kubernetes Cluster URL.
+        k8sNamespace           = 'default'                          // Kubernetes namespace.
     }
 
-
+    stages {
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build("${DOCKER_HUB_REPO}:${env.BUILD_NUMBER}")
+                    // Navigate to the directory that contains Dockerfile
+                    buildDockerImage("${imageName}")
+                }
+            }
+        }
+        
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Push the Docker image to Docker Hub
+                    pushDockerImage("${dockerHubCredentialsID}", "${imageName}")
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Deploy on Kubernetes Cluster') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v${env.BUILD_NUMBER}/', DOCKER_CREDENTIALS) {
-                        dockerImage.push()
-                    }
+                    // Deploy the image to the Kubernetes cluster
+                    deployToKubernetes("${k8sCredentialsID}", "${k8sClusterURL}", "${k8sNamespace}", "${imageName}")
                 }
             }
         }
@@ -29,30 +40,24 @@ pipeline {
         stage('Update Deployment YAML') {
             steps {
                 script {
-                    sh "sed -i 's|image: .*$|image: ${DOCKER_HUB_REPO}:${env.BUILD_NUMBER}|' ${KUBERNETES_DEPLOYMENT_FILE}"
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh "kubectl apply -f ${KUBERNETES_DEPLOYMENT_FILE}"
+                    // Update Kubernetes deployment YAML
+                    updateK8sDeployment("${imageName}", "${BUILD_NUMBER}")
                 }
             }
         }
     }
 
     post {
+        always {
+            echo "Pipeline completed."
+            cleanWs() // Clean workspace after the build is finished
+        }
         success {
-            echo 'Pipeline completed successfully!'
+            echo "${JOB_NAME}-${BUILD_NUMBER} pipeline succeeded"
         }
         failure {
-            echo 'Pipeline failed! Check logs for details.'
-        }
-        always {
-            echo "Cleaning up resources..."
-            sh "docker rmi ${DOCKER_HUB_REPO}:${env.BUILD_NUMBER} || true"
+            echo "${JOB_NAME}-${BUILD_NUMBER} pipeline failed"
         }
     }
 }
+
