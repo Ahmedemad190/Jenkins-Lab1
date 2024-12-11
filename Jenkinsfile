@@ -6,6 +6,7 @@ pipeline {
         DOCKER_IMAGE_NAME = '3omda1/firstimage'
         GITHUB_REPO_URL = 'https://github.com/Ahmedemad190/Jenkins-Lab1.git'
         MINIKUBE_CLUSTER_NAME = 'minikube'
+        KUBECONFIG = '/home/ahmed/.kube/config'
     }
 
     stages {
