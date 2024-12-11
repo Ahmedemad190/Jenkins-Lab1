@@ -3,13 +3,22 @@ pipeline {
     
     environment {
         dockerHubCredentialsID = 'task-ivolve'                          // DockerHub credentials ID.
-        imageName              = '3omda1/firstimage'             // DockerHub repo/image name.
-        k8sCredentialsID       = 'kube-cred'                      // Kubernetes credentials ID (ServiceAccount or kubeconfig).
-        k8sClusterURL          = 'https://192.168.49.2:8443'         // Kubernetes Cluster URL.
-        k8sNamespace           = 'default'                          // Kubernetes namespace.
+        imageName              = '3omda1/firstimage'                    // DockerHub repo/image name.
+        k8sCredentialsID       = 'kube-cred'                             // Kubernetes credentials ID (ServiceAccount or kubeconfig).
+        k8sClusterURL          = 'https://192.168.49.2:8443'            // Kubernetes Cluster URL.
+        k8sNamespace           = 'default'                               // Kubernetes namespace.
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    // Checkout the Git repository
+                    git branch: 'main', url: 'https://github.com/mujemi26/jenkins.git'
+                }
+            }
+        }
+        
         stage('Build Docker Image') {
             steps {
                 script {
