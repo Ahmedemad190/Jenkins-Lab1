@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins-lab2-deployment-task
+  name: jenkins-lab2-deployment-task-last
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: jenkins-lab2-task
+      app: jenkins-lab2-task-last
   template:
     metadata:
       labels:
-        app: jenkins-lab2-task
+        app: jenkins-lab2-task-last
     spec:
       containers:
-      - name: jenkins-lab2-task
+      - name: jenkins-lab2-task-last
         image: 3omda1/first-image:v45
         ports:
         - containerPort: 5000
