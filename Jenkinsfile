@@ -37,7 +37,7 @@ pipeline {
         stage('Deploy on OpenShift Cluster') {
             steps {
                 script {
-                    deployToOpenShift("${openshiftCredentialsID}", "${openshiftClusterURL}", "${openshiftProject}", "${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}")
+                    deployToOpenShift("${openshiftCredentialsID}", "${openshiftClusterURL}", "${openshiftProject}", "${DOCKER_IMAGE_NAME}")
                 }
             }
         }
