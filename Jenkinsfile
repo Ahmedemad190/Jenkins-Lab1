@@ -48,6 +48,7 @@ pipeline {
 
                         # Deploy the image on OpenShift
                         oc apply -f deployment.yml
+                        oc apply -f service.yml
                     '''
                 }
             }
