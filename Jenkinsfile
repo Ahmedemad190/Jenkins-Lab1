@@ -24,18 +24,14 @@ pipeline {
                 }
             }
         }
-
         stage('Push to Docker Hub') {
             steps {
-                withDockerRegistry([credentialsId: 'task-ivolve', url: '']) {
-                    sh """
-                        docker push ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}
-                        docker tag ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_IMAGE_NAME}:latest
-                        docker push ${DOCKER_IMAGE_NAME}:latest
-                    """
-                }
-            }
+                script {
+            pushDockerImage(DOCKER_IMAGE_NAME, env.BUILD_NUMBER, DOCKER_HUB_CREDENTIALS)
         }
+    }
+
+        
 
         stage('Deploy to OpenShift') {
             steps {
