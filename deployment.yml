@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: jenkins-lab2
-        image: 3omda1/first-image:v5
+        image: 3omda1/first-image:latest
         ports:
         - containerPort: 5000
