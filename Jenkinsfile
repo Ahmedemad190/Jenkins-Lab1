@@ -1,3 +1,4 @@
+@Library('shared-library') _ 
 pipeline {
     agent any
 
@@ -19,7 +20,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    buildDockerImage(DOCKER_IMAGE_NAME, env.BUILD_NUMBER)
+                    buildandpushDockerImage(DOCKER_IMAGE_NAME, env.BUILD_NUMBER)
                 }
             }
         }
