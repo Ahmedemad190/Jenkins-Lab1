@@ -47,16 +47,7 @@ pipeline {
                         oc project ahmedemad
 
                         # Deploy the image on OpenShift
-                        oc new-app ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} --name=lab-app-1-2-3
-
-                        # Expose the app as a service
-                        oc expose svc/lab-app-1-2-3 --port=90 --name=lab-app-1-2-3-service
-
-                        # Verify the deployment
-                        oc rollout status deployment/lab-app-1-2-3
-                        oc get deployments
-                        oc get services
-                        oc get pods
+                        oc apply -f deployment.yml
                     '''
                 }
             }
